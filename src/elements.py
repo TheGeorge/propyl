@@ -1,4 +1,4 @@
-import random
+import random, sys
 
 # errors
 class Error(Exception): pass
@@ -20,7 +20,9 @@ class Hook(object):
 		pass
 
 class Caller(object):
-	def __call__(self, *args):
+	def get_args(self, *args, **kws):
+		raise NotImplemented
+	def call_with_args(self, *args, **kws):
 		raise NotImplemented
 	def add_hook(self, hook):
 		raise NotImplemented
@@ -33,15 +35,18 @@ class FuncCall(Caller):
 	def add_hook(self, hook):
 		assert isinstance(hook, Hook)
 		self.hooks.append(hook)
-	def __call__(self, *args, **kws):
+	def get_args(self, *args, **kws):
 		call_args = tuple([a.value for a in args])
 		call_kws = dict([(key, kws[key].value) for key in kws])
+		return call_args, call_kws
+		#return self.call_with_args(*call_args, **call_kws)
+	def call_with_args(self, *call_args, **call_kws):
 		for pre in self.hooks:
 			pre.hook_arguments(self, call_args, call_kws)
 		retval = self.func(*call_args, **call_kws)
 		for hook in self.hooks:
 			hook.hook_result(self, retval, call_args, call_kws)
-		return retval, call_args, call_kws
+		return retval
 
 class Call(object):
 	def __init__(self, name, caller, args=(), kws={}):
@@ -49,44 +54,56 @@ class Call(object):
 		self.caller = caller
 		self.symb_args = tuple(args)
 		self.symb_kws = dict(kws)
-	def __call__(self, *args, **kws):
-		return self.caller(*self.symb_args, **self.symb_kws)
-
-class TestException(Exception):
-	def __init__(self, command_list, prop):
-		super(TestException, self).__init__()
-		self.command_list = command_list
-		self.prop
-	def shrink(self): pass
-	def output_commands(self):
-		for call in self.command_list:
-			print("\t"+str(call))
+	def get_args(self):
+		return self.caller.get_args(*self.symb_args, **self.symb_kws)
+	def call_with_args(self, *args, **kws):
+		return self.caller.call_with_args(*args, **kws)
 
 class Property(object):
 	_commands_ = None
 	def __init__(self):
 		super(Property, self).__init__()
-		self.commands = dict([(cmd.name, cmd) for cmd in type(self)._commands_])
+		cmds = type(self)._commands_
+		if isinstance(cmds, list):
+			self.cmdgen = UniformCmds(cmds)
+		else:
+			assert isinstance(cmds, CommandsGenerator)
+			self.cmdgen = cmds
 		self.command_list = []
 	def __getattr__(self, name):
-		if not name in self.commands:
+		return self._wrap_call(name)
+	def _wrap_call(self, name):
+		if not name in self.cmdgen.commands:
 			raise NameError
 		def wrapped():
+			args = None
+			kws = None
 			try:
-				retval, args, kws = self.commands[name]()
+				args, kws = self.cmdgen.commands[name].get_args()
+				retval = self.cmdgen.commands[name].call_with_args(*args, **kws)
 			except PreConditionNotMet as e:
 				return (False, None)
 			except PostConditionNotMet as e:
-				args,kws = e.message
+				#args,kws = e.message
 				retval = args[0]
 				args = args[1:]
-				tr = (name, self.commands[name], retval, args, kws)
+				tr = (name, self.cmdgen.commands[name], retval, args, kws)
 				self.command_list.append(tr)
 				raise AssertionError("postcondition not met")
-			tr = (name, self.commands[name], retval, args, kws)
+			except:
+				e  = sys.exc_info()[1]
+				retval = None
+				tr = (name, self.cmdgen.commands[name], retval, args, kws)
+				self.command_list.append(tr)
+				raise AssertionError("crashed")
+			tr = (name, self.cmdgen.commands[name], retval, args, kws)
 			self.command_list.append(tr)
 			return (True, retval)
 		return wrapped
+	@property
+	def command(self):
+		c = self.cmdgen.get_next()
+		return self._wrap_call(c.name)
 	def setup(self): pass
 	def teardown(self): pass
 	def finalize(self): pass
@@ -102,12 +119,32 @@ class Property(object):
 	def check(self):
 		raise NotImplemented
 
+# command generators
+class CommandsGenerator(object):
+	def __init__(self, commands):
+		super(CommandsGenerator, self).__init__()
+		self.commands = dict([(cmd.name, cmd) for cmd in commands])
+	def get_next(self):
+		raise NotImplemented
+
+class UniformCmds(CommandsGenerator):
+	def __init__(self, commands):
+		super(UniformCmds, self).__init__(commands)
+		self.keys = self.commands.keys()
+	def get_next(self):
+		return self.commands[random.choice(self.keys)]
+
 # statem stuff
 class RuntimeStates:
 	states = {}
 	@staticmethod
 	def init_states(names):
 		RuntimeStates.states = dict([(name, {}) for name in names])
+	@staticmethod
+	def reset_states():
+		for key in RuntimeStates.states:
+			RuntimeStates.states[key] = {}
+
 def get_state(name):
 	return RuntimeStates.states[name]
 
@@ -153,7 +190,7 @@ class postcondition(object):
 	def __call__(self, hook_func):
 		def wrapped(*args, **kws):
 			if not hook_func(*args, **kws):
-				raise PostConditionNotMet((args,kws))
+				raise PostConditionNotMet()
 		hook = StateHook(wrapped)
 		self.call.caller.add_hook(hook)
 		return hook_func

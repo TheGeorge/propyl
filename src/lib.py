@@ -1,4 +1,4 @@
-from elements import Generator
+from elements import Generator, UniformCmds
 import random
 
 # base types
@@ -57,3 +57,19 @@ class Dictionary(Generator):
 	def generate(self):
 		l = random.randint(0,self.maxlength)
 		return dict([self.key_vals.generate() for i in xrange(l)])
+
+# a sampling generator
+class WeightedCmds(UniformCmds):
+	def __init__(self, commands, weights):
+		super(WeightedCmds, self).__init__(commands)
+		self.keys = [c.name for c in commands] # sorted keys
+		self.weights = weights
+		self.s = float(sum(self.weights))
+		assert len(self.weights)==len(self.keys)
+	def get_next(self):
+		r = random.uniform(0, self.s)
+		acc = 0
+		for i, w in enumerate(self.weights):
+			acc+=w
+			if r<acc:
+				return self.commands[self.keys[i]]

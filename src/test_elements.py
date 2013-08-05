@@ -1,6 +1,8 @@
 from elements import *
 from lib import * 
+from search import *
 
+# the function to test:
 def a(x,y):
 	if x==0:
 		return -1
@@ -21,32 +23,27 @@ def only_even_numbers(*args, **kws):
 		return False
 	return True
 
-@postcondition(func_a)
-def define_property_as_condition(result, *args, **kws):
-	if result >= 0:
-		return True
-	else:
-		return False
+#@postcondition(func_a)
+#def define_property_as_condition(result, *args, **kws):
+	#if result >= 0:
+		#return True
+	#else:
+		#return False
 
+
+
+@test_property("my_test")
 class Prop_Positive(Property):
-	_commands_ = [func_a]
+	_commands_ = WeightedCmds([func_a], [1])
 	def setup(self):
 		get_state("general")["summed"] = 0
 	def check(self):
-		ok, ret = self.func_a()
+		ok, ret = self.command()
 		if ok:
 			assert ret >= 0, AssertionError("not positive")
 
-# glue code to run the test
+# init the states
 RuntimeStates.init_states(["general"])
-p = Prop_Positive()
 
-try:
-	p.test()
-except AssertionError as e:
-	print "Error: ", e.message
-finally:
-	for l in p.command_list:
-		print l
-
-print RuntimeStates.states
+# run the tests
+run_tests(None)
