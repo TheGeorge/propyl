@@ -70,6 +70,8 @@ class Property(object):
 			assert isinstance(cmds, CommandsGenerator)
 			self.cmdgen = cmds
 		self.command_list = []
+		self.max_tries = 0
+		self.precondition_tries = 0
 	def __getattr__(self, name):
 		return self._wrap_call(name)
 	def _wrap_call(self, name):
@@ -89,7 +91,10 @@ class Property(object):
 				args = args[1:]
 				tr = (name, self.cmdgen.commands[name], retval, args, kws)
 				self.command_list.append(tr)
-				raise AssertionError("postcondition not met")
+				if e.message:
+					raise AssertionError("postcondition '%s' not met" %(e.message,))
+				else:
+					raise AssertionError("postcondition not met")
 			except:
 				e  = sys.exc_info()[1]
 				retval = None
@@ -107,7 +112,9 @@ class Property(object):
 	def setup(self): pass
 	def teardown(self): pass
 	def finalize(self): pass
-	def test(self, N=1000):
+	def test(self, N=1000, max_tries=50):
+		self.max_tries = max_tries
+		self.precondition_tries = 0
 		try:
 			self.setup()
 			self.command_list = []
@@ -117,7 +124,15 @@ class Property(object):
 		finally:
 			self.finalize()
 	def check(self):
-		raise NotImplemented
+		self.run_commands()
+	def run_commands(self):
+		ok, result = self.command()
+		if not ok:
+			self.precondition_tries+=1
+			if self.precondition_tries >= self.max_tries:
+				raise AssertionError("Couldn't generate a call after %d tries" % (self.max_tries,))
+		else:
+			self.precondition_tries=0
 
 # command generators
 class CommandsGenerator(object):
@@ -184,13 +199,14 @@ class precondition(object):
 		return pre_func
 
 class postcondition(object):
-	def __init__(self, call):
+	def __init__(self, call, name=None):
 		super(postcondition, self).__init__()
 		self.call = call
+		self.name = name
 	def __call__(self, hook_func):
 		def wrapped(*args, **kws):
 			if not hook_func(*args, **kws):
-				raise PostConditionNotMet()
+				raise PostConditionNotMet(self.name)
 		hook = StateHook(wrapped)
 		self.call.caller.add_hook(hook)
 		return hook_func

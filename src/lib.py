@@ -73,3 +73,8 @@ class WeightedCmds(UniformCmds):
 			acc+=w
 			if r<acc:
 				return self.commands[self.keys[i]]
+
+## fsm generator
+#class FSMCmds(CommandsGenerator):
+	#def __init__(self, generator, states):
+		

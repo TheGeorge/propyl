@@ -23,12 +23,12 @@ def only_even_numbers(*args, **kws):
 		return False
 	return True
 
-#@postcondition(func_a)
-#def define_property_as_condition(result, *args, **kws):
-	#if result >= 0:
-		#return True
-	#else:
-		#return False
+@postcondition(func_a, "always positive")
+def define_property_as_condition(result, *args, **kws):
+	if result >= 0:
+		return True
+	else:
+		return False
 
 
 
@@ -37,10 +37,8 @@ class Prop_Positive(Property):
 	_commands_ = WeightedCmds([func_a], [1])
 	def setup(self):
 		get_state("general")["summed"] = 0
-	def check(self):
-		ok, ret = self.command()
-		if ok:
-			assert ret >= 0, AssertionError("not positive")
+	#def check(self):
+		#self.run_commands()
 
 # init the states
 RuntimeStates.init_states(["general"])
