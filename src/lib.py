@@ -74,7 +74,28 @@ class WeightedCmds(UniformCmds):
 			if r<acc:
 				return self.commands[self.keys[i]]
 
-## fsm generator
+# fsm generator
+class State(object):
+	def __gt__(self, other):
+		return Transition(self, other)
+
+class Transition(object):
+	def __init__(self, from_state, to_state):
+		super(Transition, self).__init__()
+		self.from_state = from_state
+		self.to_state = to_state
+		self.functions = []
+		self.preconditions = []
+	def __call__(self, functions):
+		always_true = lambda *args, **kws: True
+		[(self.preconditions.append(p), self.functions.append(f if f else always_true)) for p,f in functions]
+		return self
+	def get_calls(self):
+		# TODO
+		# evaluate preconditions and return call
+		
+
+
 #class FSMCmds(CommandsGenerator):
-	#def __init__(self, generator, states):
+	#def __init__(self, generator, transitions):
 		
