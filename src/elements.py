@@ -2,6 +2,8 @@ import random, sys
 
 # errors
 class Error(Exception): pass
+class TransitionError(Exception): pass
+
 class PreConditionNotMet(Error): pass
 class PostConditionNotMet(Error): pass
 
@@ -39,13 +41,18 @@ class FuncCall(Caller):
 		call_args = tuple([a.value for a in args])
 		call_kws = dict([(key, kws[key].value) for key in kws])
 		return call_args, call_kws
-		#return self.call_with_args(*call_args, **call_kws)
-	def call_with_args(self, *call_args, **call_kws):
+	def check_preconditions(self, call_args, call_kws):
 		for pre in self.hooks:
-			pre.hook_arguments(self, call_args, call_kws)
-		retval = self.func(*call_args, **call_kws)
+			if not isinstance(pre, PreConditionHook):
+				continue
+			if not pre.hook_arguments(self, call_args, call_kws):
+				return False
+		return True
+	def check_postconditions(self, retval, call_args, call_kws):
 		for hook in self.hooks:
 			hook.hook_result(self, retval, call_args, call_kws)
+	def call_with_args(self, *call_args, **call_kws):
+		retval = self.func(*call_args, **call_kws)
 		return retval
 
 class Call(object):
@@ -58,6 +65,10 @@ class Call(object):
 		return self.caller.get_args(*self.symb_args, **self.symb_kws)
 	def call_with_args(self, *args, **kws):
 		return self.caller.call_with_args(*args, **kws)
+	def check_preconditions(self, call_args, call_kws):
+		return self.caller.check_preconditions(call_args, call_kws)
+	def check_postconditions(self, retval, call_args, call_kws):
+		self.caller.check_postconditions(retval, call_args, call_kws)
 
 class Property(object):
 	_commands_ = None
@@ -70,21 +81,17 @@ class Property(object):
 			assert isinstance(cmds, CommandsGenerator)
 			self.cmdgen = cmds
 		self.command_list = []
-		self.max_tries = 0
-		self.precondition_tries = 0
-	def __getattr__(self, name):
-		return self._wrap_call(name)
-	def _wrap_call(self, name):
+	#def __getattr__(self, name):
+		#return self.cmdgen.commands[name]
+	def _wrap_call(self, name, args, kws):
 		if not name in self.cmdgen.commands:
 			raise NameError
+		a,k = args, kws
 		def wrapped():
-			args = None
-			kws = None
+			args, kws = a,k
 			try:
-				args, kws = self.cmdgen.commands[name].get_args()
 				retval = self.cmdgen.commands[name].call_with_args(*args, **kws)
-			except PreConditionNotMet as e:
-				return (False, None)
+				self.cmdgen.commands[name].check_postconditions(retval, args, kws)
 			except PostConditionNotMet as e:
 				#args,kws = e.message
 				retval = args[0]
@@ -107,14 +114,13 @@ class Property(object):
 		return wrapped
 	@property
 	def command(self):
-		c = self.cmdgen.get_next()
-		return self._wrap_call(c.name)
+		c, args, kws = self.cmdgen.get_next()
+		return self._wrap_call(c.name, args, kws)
 	def setup(self): pass
 	def teardown(self): pass
 	def finalize(self): pass
 	def test(self, N=1000, max_tries=50):
-		self.max_tries = max_tries
-		self.precondition_tries = 0
+		self.cmdgen.max_tries = max_tries
 		try:
 			self.setup()
 			self.command_list = []
@@ -127,18 +133,13 @@ class Property(object):
 		self.run_commands()
 	def run_commands(self):
 		ok, result = self.command()
-		if not ok:
-			self.precondition_tries+=1
-			if self.precondition_tries >= self.max_tries:
-				raise AssertionError("Couldn't generate a call after %d tries" % (self.max_tries,))
-		else:
-			self.precondition_tries=0
 
 # command generators
 class CommandsGenerator(object):
 	def __init__(self, commands):
 		super(CommandsGenerator, self).__init__()
 		self.commands = dict([(cmd.name, cmd) for cmd in commands])
+		self.max_tries = 50
 	def get_next(self):
 		raise NotImplemented
 
@@ -147,7 +148,18 @@ class UniformCmds(CommandsGenerator):
 		super(UniformCmds, self).__init__(commands)
 		self.keys = self.commands.keys()
 	def get_next(self):
-		return self.commands[random.choice(self.keys)]
+		# evaluate all preconditions
+		tries = 0
+		while tries<self.max_tries:
+			choose_from = []
+			for key in self.keys:
+				args, kws = self.commands[key].get_args()
+				if self.commands[key].check_preconditions(args, kws):
+					choose_from.append((self.commands[key], args, kws))
+			if choose_from:
+				return random.choice(choose_from)
+			tries += 1
+		raise AssertionError("Could not generate a valid call within %d tries." % (self.max_tries,))
 
 # statem stuff
 class RuntimeStates:
@@ -186,8 +198,8 @@ class PreConditionHook(Hook):
 		super(PreConditionHook, self).__init__()
 		self.func = func
 	def hook_arguments(self, call, args, kws):
-		if not self.func(*args, **kws):
-			raise PreConditionNotMet()
+		return self.func(*args, **kws)
+
 
 class precondition(object):
 	def __init__(self, call):

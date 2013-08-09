@@ -1,4 +1,4 @@
-from elements import Generator, UniformCmds
+from elements import Generator, UniformCmds, CommandsGenerator
 import random
 
 # base types
@@ -58,24 +58,42 @@ class Dictionary(Generator):
 		l = random.randint(0,self.maxlength)
 		return dict([self.key_vals.generate() for i in xrange(l)])
 
+class Symbol(Generator): pass # use for symbolic variables
+
 # a sampling generator
 class WeightedCmds(UniformCmds):
 	def __init__(self, commands, weights):
 		super(WeightedCmds, self).__init__(commands)
 		self.keys = [c.name for c in commands] # sorted keys
-		self.weights = weights
-		self.s = float(sum(self.weights))
-		assert len(self.weights)==len(self.keys)
+		self.weights = dict([(self.keys[i], weights[i]) for i in xrange(len(self.keys))])
+		assert len(self.weights)==len(self.keys), ValueError("bad initializer")
 	def get_next(self):
-		r = random.uniform(0, self.s)
-		acc = 0
-		for i, w in enumerate(self.weights):
-			acc+=w
-			if r<acc:
-				return self.commands[self.keys[i]]
+		tries = 0
+		while tries<self.max_tries:
+			choose_from = []
+			for key in self.keys:
+				args, kws = self.commands[key].get_args()
+				if self.commands[key].check_preconditions(args, kws):
+					choose_from.append((key, args, kws))
+			if not choose_from:
+				tries+=1
+			else:
+				lw = [self.weights[c[0]] for c in choose_from ]
+				s = sum(lw)
+				r = random.uniform(0, s)
+				acc = 0
+				for i, w in enumerate(lw):
+					acc+=w
+					if r<acc:
+						name, args, kws = choose_from[i]
+						return self.commands[name], args, kws
+		raise AssertionError("Could not generate a valid call within %d tries." % (self.max_tries,))
 
 # fsm generator
 class State(object):
+	def __init__(self, name):
+		super(State, self).__init__()
+		self.name = name
 	def __gt__(self, other):
 		return Transition(self, other)
 
@@ -87,15 +105,21 @@ class Transition(object):
 		self.functions = []
 		self.preconditions = []
 	def __call__(self, functions):
-		always_true = lambda *args, **kws: True
-		[(self.preconditions.append(p), self.functions.append(f if f else always_true)) for p,f in functions]
+		self.functions = functions
 		return self
 	def get_calls(self):
-		# TODO
-		# evaluate preconditions and return call
-		
+		possible = []
+		for f in self.functions:
+			args, kws = f.get_args()
+			if f.check_preconditions(args, kws):
+				possible.append(f, args, kws) 
+		return possible
 
-
-#class FSMCmds(CommandsGenerator):
-	#def __init__(self, generator, transitions):
-		
+class FSMCmds(CommandsGenerator):
+	def __init__(self, transitions, starting_state, generator=None):
+		super(FSMCmds, self).__init__()
+		self.transitions = transitions
+		self.state = starting_state
+	def get_next(self):
+		pass
+		# todo
