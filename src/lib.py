@@ -89,6 +89,31 @@ class WeightedCmds(UniformCmds):
 						return self.commands[name], args, kws
 		raise AssertionError("Could not generate a valid call within %d tries." % (self.max_tries,))
 
+class WeightedCmds2(UniformCmds):
+	""" this generator first generates <weight> amount of calls for each function, filters them with the preconditions and then selects one uniformly
+	"""
+	def __init__(self, commands, weights):
+		super(WeightedCmds2, self).__init__(commands)
+		self.keys = [c.name for c in commands] # sorted keys
+		self.weights = dict([(self.keys[i], int(weights[i])) for i in xrange(len(self.keys))])
+		assert len(self.weights)==len(self.keys), ValueError("bad initializer")
+	def get_next(self):
+		tries = 0
+		while tries<self.max_tries:
+			choose_from = []
+			for key in self.keys:
+				for i in xrange(self.weights[key]):
+					args, kws = self.commands[key].get_args()
+					if self.commands[key].check_preconditions(args, kws):
+						choose_from.append((key, args, kws))
+			if not choose_from:
+				tries+=1
+			else:
+				name, args, kws = random.choice(choose_from)
+				return self.commands[name], args, kws
+		raise AssertionError("Could not generate a valid call within %d tries." % (self.max_tries,))
+
+
 # fsm generator
 class State(object):
 	def __init__(self, name):
