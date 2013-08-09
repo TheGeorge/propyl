@@ -32,8 +32,8 @@ def define_property_as_condition(result, *args, **kws):
 
 @test_property("my_test")
 class Prop_Positive(Property):
-	_commands_ = WeightedCmds2([func_a], [1])
-	#_commands_ = [func_a]
+	#_commands_ = WeightedCmds2([func_a], [1])
+	_commands_ = [func_a]
 	def setup(self):
 		get_state("general")["summed"] = 0
 	#def check(self):

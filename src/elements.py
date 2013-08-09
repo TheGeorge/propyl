@@ -91,13 +91,11 @@ class Property(object):
 			args, kws = a,k
 			try:
 				retval = self.cmdgen.commands[name].call_with_args(*args, **kws)
-				self.cmdgen.commands[name].check_postconditions(retval, args, kws)
-			except PostConditionNotMet as e:
-				#args,kws = e.message
-				retval = args[0]
-				args = args[1:]
+				# if the call didn't crash we have all the information to add it to the call history
 				tr = (name, self.cmdgen.commands[name], retval, args, kws)
 				self.command_list.append(tr)
+				self.cmdgen.commands[name].check_postconditions(retval, args, kws)
+			except PostConditionNotMet as e:
 				if e.message:
 					raise AssertionError("postcondition '%s' not met" %(e.message,))
 				else:
@@ -108,8 +106,6 @@ class Property(object):
 				tr = (name, self.cmdgen.commands[name], retval, args, kws)
 				self.command_list.append(tr)
 				raise AssertionError("crashed")
-			tr = (name, self.cmdgen.commands[name], retval, args, kws)
-			self.command_list.append(tr)
 			return (True, retval)
 		return wrapped
 	@property

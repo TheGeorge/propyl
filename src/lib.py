@@ -141,10 +141,34 @@ class Transition(object):
 		return possible
 
 class FSMCmds(CommandsGenerator):
-	def __init__(self, transitions, starting_state, generator=None):
+	def __init__(self, transitions, starting_state):
 		super(FSMCmds, self).__init__()
-		self.transitions = transitions
+		self.states = {}
+		for transition in transitions:
+			fs = transition.from_state
+			if fs in self.states[fs]:
+				self.states[fs].append(transition)
+			else:
+				self.states[fs] = [transition]
 		self.state = starting_state
 	def get_next(self):
-		pass
-		# todo
+		transitions = self.states[self.state]
+		collected = {}
+		for transition in transitions:
+			calls = transition.get_calls()
+			for call, args, kws in calls:
+				assert not call in collected, KeyError("Too many targets")
+				collected[call] = (args, kws, transition)
+		selected = random.choice(collected.keys())
+		args, kws, transition = collected[selected]
+		self.state = transition.to_state
+		return selected, args, kws
+
+
+
+
+
+
+
+
+
