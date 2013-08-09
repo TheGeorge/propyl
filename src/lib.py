@@ -137,19 +137,21 @@ class Transition(object):
 		for f in self.functions:
 			args, kws = f.get_args()
 			if f.check_preconditions(args, kws):
-				possible.append(f, args, kws) 
+				possible.append((f, args, kws))
 		return possible
 
 class FSMCmds(CommandsGenerator):
 	def __init__(self, transitions, starting_state):
-		super(FSMCmds, self).__init__()
+		super(FSMCmds, self).__init__([])
 		self.states = {}
 		for transition in transitions:
 			fs = transition.from_state
-			if fs in self.states[fs]:
+			if fs in self.states:
 				self.states[fs].append(transition)
 			else:
 				self.states[fs] = [transition]
+			for c in transition.functions:
+				self.commands[c.name] = c
 		self.state = starting_state
 	def get_next(self):
 		transitions = self.states[self.state]
@@ -163,12 +165,3 @@ class FSMCmds(CommandsGenerator):
 		args, kws, transition = collected[selected]
 		self.state = transition.to_state
 		return selected, args, kws
-
-
-
-
-
-
-
-
-
