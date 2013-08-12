@@ -1,4 +1,4 @@
-from pyper import *
+from propyl import *
 
 #test functions
 def ping():

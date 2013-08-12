@@ -1,4 +1,4 @@
-from pyper import *
+from propyl import *
 
 # the function to test:
 def d(x,y):

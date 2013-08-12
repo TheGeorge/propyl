@@ -1,13 +1,13 @@
 from ctypes import * 
 import random
-import pyper
+import propyl
 
 # types
-class CBool(pyper.Generator):
+class CBool(propyl.Generator):
 	def generate(self):
 		return c_bool(random.choice([True, False]))
 
-class CChar(pyper.Generator):
+class CChar(propyl.Generator):
 	def __init__(self, chars=None):
 		super(CChar, self).__init__()
 		self.chars = chars
@@ -17,7 +17,7 @@ class CChar(pyper.Generator):
 		else:
 			return c_char(random.choice(self.chars))
 
-class CInteger(pyper.Integer):
+class CInteger(propyl.Integer):
 	conversion = {
 		'byte'                  : c_byte,
 		'unsigned byte'         : c_ubyte,
@@ -36,7 +36,7 @@ class CInteger(pyper.Integer):
 	def generate(self):
 		return self.ctype(super(CInteger, self).generate())
 
-class CFloat(pyper.Float):
+class CFloat(propyl.Float):
 	conversion = {
 		'double'      : c_double,
 		'long double' : c_longdouble,
