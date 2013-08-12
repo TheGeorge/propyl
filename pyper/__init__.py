@@ -6,3 +6,6 @@ from property import *
 from search import *
 from util import * 
 from variable_generator import *
+
+#library
+import lib
