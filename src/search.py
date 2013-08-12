@@ -1,4 +1,5 @@
-from elements import * 
+from property import * 
+from error import *
 
 class Search(object):
 	def __init__(self, properties, N=1000):
