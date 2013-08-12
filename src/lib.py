@@ -58,7 +58,40 @@ class Dictionary(Generator):
 		l = random.randint(0,self.maxlength)
 		return dict([self.key_vals.generate() for i in xrange(l)])
 
-class Symbol(Generator): pass # use for symbolic variables
+# Symbolic variables and some python class magic
+class _Symbols(type):
+	_syms_ = {}
+	def __getattr__(cls, name):
+		if not name in _syms_:
+			raise AttributeError(name)
+		else:
+			return _syms_[name]
+	def add(cls, var):
+		cls._syms_[var.name] = var
+
+class Symbols(object):
+	__metaclass__ = _Symbols
+
+class Symbol(Generator):
+	""" This should generate the same value every time within a run
+	"""
+	def __init__(self, name, code):
+		super(Symbol, self).__init__()
+		self.name = name
+		self.code = code
+		self.value = None
+		self.generate_new = True
+		Symbols.add(self)
+	def next_run(self):
+		super(Symbol, self).next_run()
+		# generate value once per run
+		self.generate_new = True
+	def generate(self):
+		if self.generate_new:
+			# check if the value for this turn has already been generated
+			self.value = random.choice(eval(code))
+			self.generate_new = False
+		return self.value
 
 # a sampling generator
 class WeightedCmds(UniformCmds):
@@ -159,7 +192,7 @@ class FSMCmds(CommandsGenerator):
 		for transition in transitions:
 			calls = transition.get_calls()
 			for call, args, kws in calls:
-				assert not call in collected, KeyError("Too many targets")
+				assert not call in collected, KeyError("too many targets")
 				collected[call] = (args, kws, transition)
 		selected = random.choice(collected.keys())
 		args, kws, transition = collected[selected]

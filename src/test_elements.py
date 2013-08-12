@@ -3,7 +3,7 @@ from lib import *
 from search import *
 
 # the function to test:
-def a(x,y):
+def d(x,y):
 	if x==0:
 		return -1
 	if x<y:
@@ -11,7 +11,7 @@ def a(x,y):
 	else:
 		return x-y
 
-func_a = Call("func_a", FuncCall(a), (Integer(), Integer()))
+func_a = Call("func_d", FuncCall(d), (Integer(), Integer()))
 
 @next_state(func_a)
 def record_results(result, *args, **kws):
@@ -36,8 +36,6 @@ class Prop_Positive(Property):
 	_commands_ = [func_a]
 	def setup(self):
 		get_state("general")["summed"] = 0
-	#def check(self):
-		#self.run_commands()
 
 # init the states
 RuntimeStates.init_states(["general"])

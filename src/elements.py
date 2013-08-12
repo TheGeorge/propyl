@@ -2,13 +2,17 @@ import random, sys
 
 # errors
 class Error(Exception): pass
-class TransitionError(Exception): pass
+class TransitionError(Error): pass
 
 class PreConditionNotMet(Error): pass
 class PostConditionNotMet(Error): pass
 
 # base elements
+_var_list = [] # global variable list
 class Generator(object):
+	def __init__(self):
+		_var_list.append(self)
+	def next_run(self): pass
 	def generate(self):
 		raise NotImplemented
 	@property
@@ -37,7 +41,7 @@ class FuncCall(Caller):
 	def add_hook(self, hook):
 		assert isinstance(hook, Hook)
 		self.hooks.append(hook)
-	def get_args(self, *args, **kws):
+	def get_args(self, args, kws):
 		call_args = tuple([a.value for a in args])
 		call_kws = dict([(key, kws[key].value) for key in kws])
 		return call_args, call_kws
@@ -51,7 +55,7 @@ class FuncCall(Caller):
 	def check_postconditions(self, retval, call_args, call_kws):
 		for hook in self.hooks:
 			hook.hook_result(self, retval, call_args, call_kws)
-	def call_with_args(self, *call_args, **call_kws):
+	def call_with_args(self, call_args, call_kws):
 		retval = self.func(*call_args, **call_kws)
 		return retval
 
@@ -62,9 +66,9 @@ class Call(object):
 		self.symb_args = tuple(args)
 		self.symb_kws = dict(kws)
 	def get_args(self):
-		return self.caller.get_args(*self.symb_args, **self.symb_kws)
-	def call_with_args(self, *args, **kws):
-		return self.caller.call_with_args(*args, **kws)
+		return self.caller.get_args(self.symb_args, self.symb_kws)
+	def call_with_args(self, args, kws):
+		return self.caller.call_with_args(args, kws)
 	def check_preconditions(self, call_args, call_kws):
 		return self.caller.check_preconditions(call_args, call_kws)
 	def check_postconditions(self, retval, call_args, call_kws):
@@ -90,7 +94,7 @@ class Property(object):
 		def wrapped():
 			args, kws = a,k
 			try:
-				retval = self.cmdgen.commands[name].call_with_args(*args, **kws)
+				retval = self.cmdgen.commands[name].call_with_args(args, kws)
 				# if the call didn't crash we have all the information to add it to the call history
 				tr = (name, self.cmdgen.commands[name], retval, args, kws)
 				self.command_list.append(tr)
@@ -108,6 +112,13 @@ class Property(object):
 				raise AssertionError("crashed")
 			return (True, retval)
 		return wrapped
+	def run_list(self, command_list):
+		RuntimeStates.reset_states()
+		self.setup()
+		for command in command_list:
+			cn, call, retval, args, kws = command
+			retval = call.call_with_args(args, kws)
+			call.check_postconditions(retval, args, kws)
 	@property
 	def command(self):
 		c, args, kws = self.cmdgen.get_next()
@@ -121,6 +132,10 @@ class Property(object):
 			self.setup()
 			self.command_list = []
 			for i in xrange(N):
+				# for every run: reset var_list
+				for var in _var_list:
+					var.next_run()
+				# now check the property
 				self.check()
 			self.teardown()
 		finally:
@@ -207,6 +222,7 @@ class precondition(object):
 		return pre_func
 
 class postcondition(object):
+	_counter_ = 0
 	def __init__(self, call, name=None):
 		super(postcondition, self).__init__()
 		self.call = call
