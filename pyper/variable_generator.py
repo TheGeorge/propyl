@@ -1,3 +1,5 @@
+import random
+
 _var_list = [] # global variable list
 class Generator(object):
 	def __init__(self):
@@ -8,8 +10,6 @@ class Generator(object):
 	@property
 	def value(self):
 		return self.generate()
-
-import random
 
 # base types
 class Integer(Generator):

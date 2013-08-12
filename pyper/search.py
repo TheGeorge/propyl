@@ -1,5 +1,5 @@
-from property import * 
-from error import *
+from property import Property
+from util import RuntimeStates
 
 class Search(object):
 	def __init__(self, properties, N=1000):

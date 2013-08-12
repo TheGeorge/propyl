@@ -1,6 +1,4 @@
-from elements import *
-from lib import * 
-from search import *
+from pyper import *
 
 # the function to test:
 def d(x,y):

@@ -1,3 +1,9 @@
+from command_generator import UniformCmds, CommandsGenerator
+from variable_generator import _var_list
+from error import PostConditionNotMet
+
+import sys
+
 class Property(object):
 	_commands_ = None
 	def __init__(self):
