@@ -5,7 +5,7 @@ import pyper
 # types
 class CBool(pyper.Generator):
 	def generate(self):
-		return c_bool(random.choice([True, False])
+		return c_bool(random.choice([True, False]))
 
 class CChar(pyper.Generator):
 	def __init__(self, chars=None):
