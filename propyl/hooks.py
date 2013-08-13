@@ -1,3 +1,5 @@
+from error import PostConditionNotMet
+
 class Hook(object):
 	def hook_arguments(self, call, args, kws):
 		pass

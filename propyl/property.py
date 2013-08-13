@@ -1,6 +1,7 @@
 from command_generator import UniformCmds, CommandsGenerator
 from variable_generator import _var_list
-from error import PostConditionNotMet
+from error import PostConditionNotMet, Error
+from util import RuntimeStates
 
 import sys
 
@@ -28,17 +29,27 @@ class Property(object):
 				# if the call didn't crash we have all the information to add it to the call history
 				tr = (name, self.cmdgen.commands[name], retval, args, kws)
 				self.command_list.append(tr)
-				self.cmdgen.commands[name].check_postconditions(retval, args, kws)
+				#self.cmdgen.commands[name].check_postconditions(retval, args, kws)
+				try:
+					self.cmdgen.commands[name].check_postconditions(retval, args, kws)
+				except PostConditionNotMet as e:
+					raise e
+				except Exception as e:
+					raise Error("crashed evaluating a postcondition: %s" % (e.message,))
 			except PostConditionNotMet as e:
 				if e.message:
 					raise AssertionError("postcondition '%s' not met" %(e.message,))
 				else:
 					raise AssertionError("postcondition not met")
+			except Error as e:
+				raise e
 			except:
 				e  = sys.exc_info()[1]
 				retval = None
 				tr = (name, self.cmdgen.commands[name], retval, args, kws)
 				self.command_list.append(tr)
+				import traceback
+				traceback.print_exc(file=sys.stdout)
 				raise AssertionError("crashed")
 			return (True, retval)
 		return wrapped
@@ -49,6 +60,7 @@ class Property(object):
 			cn, call, retval, args, kws = command
 			retval = call.call_with_args(args, kws)
 			call.check_postconditions(retval, args, kws)
+
 	@property
 	def command(self):
 		c, args, kws = self.cmdgen.get_next()

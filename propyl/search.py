@@ -1,23 +1,6 @@
 from property import Property
 from util import RuntimeStates
 
-class Search(object):
-	def __init__(self, properties, N=1000):
-		super(Search,self).__init__()
-		self.props = properties
-		self.amount = N
-	def test(self):
-		for prop in self.props:
-			print("Property %s" %(prop.name,))
-			for i in xrange(amount):
-				try:
-					prop.test()
-				except elements.TestException as testcase:
-					print("oh my!")
-					testcase.shrink
-					testcase.output_commands
-					break
-
 class Test(object):
 	def __init__(self, properties, N=1000):
 		self.props = properties
@@ -88,7 +71,7 @@ def run_tests(argv):
 			t.run()
 		except Exception as e:
 			import traceback, sys
-			print("The testing framework has crashed during a crash: %s" % (e.message,))
+			print("The testing framework has crashed during a test: %s" % (e.message,))
 			try:
 				raw_input("press [Enter] for debug information and [Ctrl+C] to exit.")
 			except KeyboardInterrupt:
