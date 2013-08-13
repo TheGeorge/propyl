@@ -202,12 +202,15 @@ class CFunction(object):
 class CCall(propyl.FuncCall):
 	""" same as function call, just checks that no kws arguments are used and emphthizes the fact that you are calling a c function
 	"""
-	def __init__(self, func, argtypes = None, restype=None):
+	def __init__(self, func, restype=None):
 		super(CCall, self).__init__(func)
-		self.func.argtypes = argtypes
 		self.func.restype = restype
 	def get_args(self, args, kws):
 		assert not kws, CTypesError("c functions take no keyword arguments")
+		try:
+			self.func.argtypes = [arg.ctype for arg in args]
+		except AttributeError as e:
+			raise CTypesError("error: all ctypes generators must define a ctype attribute")
 		return super(CCall, self).get_args(args, kws)
 	def check_preconditions(self, call_args, call_kws):
 		assert not call_kws, CTypesError("c functions take no keyword arguments")

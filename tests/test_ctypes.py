@@ -4,7 +4,7 @@ from ctypes import *
 
 mylib = CLib("./mylib.so")
 
-func_add = Call("add", CCall(mylib.add, argtypes=[c_int, c_int], restype=c_int), (CInteger(), CInteger()))
+func_add = Call("add", CCall(mylib.add, restype=c_int), (CInteger(), CInteger()))
 
 @postcondition(func_add)
 def high_level_add(result, a, b):
