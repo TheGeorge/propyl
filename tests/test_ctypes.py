@@ -1,20 +1,17 @@
 from propyl import *
 from propyl.lib.ctypes_elements import *
+from ctypes import * 
 
 mylib = CLib("./mylib.so")
 
-func_add = Call("add", CCall(mylib.add), (CInteger(), CInteger()))
+func_add = Call("add", CCall(mylib.add, argtypes=[c_int, c_int], restype=c_int), (CInteger(), CInteger()))
 
 @postcondition(func_add)
 def high_level_add(result, a, b):
 	return a.value+b.value==result
 
 @test_property("ctypes_base_test")
-class Prop_Ctypes_Base(Property):
+class Prop_Ctypes_Base(CProperty):
 	_commands_ = [func_add]
-	def setup(self):
-		setup_ctypes()
-	def teardown(self):
-		teardown_ctypes()
 
 run_tests(None)

@@ -154,7 +154,7 @@ def _save_unload_lib(lib):
 
 # encapsuled C-lib
 class CLib(object):
-	def __init__(self, path_to_lib, unload=False):
+	def __init__(self, path_to_lib, unload=True):
 		super(CLib, self).__init__()
 		self.path = path_to_lib
 		self.lib = None
@@ -185,16 +185,27 @@ class CFunction(object):
 		super(CFunction, self).__init__()
 		self.lib = lib
 		self.name = name
+		self.argtypes = None
+		self.restype = None
 	def __call__(self, *args):
 		# retrieve library and function at call time
 		if not self.lib.lib:
 			raise CTypesError("library not loaded, forget to initialize?")
-		return getattr(self.lib.lib, self.name)(*args)
+		f = getattr(self.lib.lib, self.name)
+		if self.argtypes:
+			f.argtypes = self.argtypes
+		if self.restype:
+			f.restype = self.restype
+		return f(*args)
 
 # call object
 class CCall(propyl.FuncCall):
 	""" same as function call, just checks that no kws arguments are used and emphthizes the fact that you are calling a c function
 	"""
+	def __init__(self, func, argtypes = None, restype=None):
+		super(CCall, self).__init__(func)
+		self.func.argtypes = argtypes
+		self.func.restype = restype
 	def get_args(self, args, kws):
 		assert not kws, CTypesError("c functions take no keyword arguments")
 		return super(CCall, self).get_args(args, kws)
@@ -208,3 +219,9 @@ class CCall(propyl.FuncCall):
 		assert not call_kws, CTypesError("c functions take no keyword arguments")
 		return super(CCall, self).call_with_args(call_args, call_kws)
 
+# util property
+class CProperty(propyl.Property):
+	def setup(self):
+		setup_ctypes()
+	def teardown(self):
+		teardown_ctypes()
