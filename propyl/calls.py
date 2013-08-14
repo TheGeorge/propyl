@@ -31,6 +31,8 @@ class FuncCall(Caller):
 		for hook in self.hooks:
 			hook.hook_result(self, retval, call_args, call_kws)
 	def call_with_args(self, call_args, call_kws):
+		for hook in self.hooks:
+			hook.hook_call(self, call_args, call_kws)
 		retval = self.func(*call_args, **call_kws)
 		return retval
 

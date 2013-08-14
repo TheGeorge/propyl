@@ -48,8 +48,8 @@ class Property(object):
 				retval = None
 				tr = (name, self.cmdgen.commands[name], retval, args, kws)
 				self.command_list.append(tr)
-				#import traceback
-				#traceback.print_exc(file=sys.stdout)
+				import traceback
+				traceback.print_exc(file=sys.stdout)
 				raise AssertionError("crashed")
 			return (True, retval)
 		return wrapped

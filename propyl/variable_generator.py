@@ -1,5 +1,10 @@
 import random
 
+# import everything important
+from util import * 
+from variable_generator import * 
+
+
 _var_list = [] # global variable list
 class Generator(object):
 	def __init__(self):
@@ -72,10 +77,10 @@ class Dictionary(Generator):
 class _Symbols(type):
 	_syms_ = {}
 	def __getattr__(cls, name):
-		if not name in _syms_:
+		if not name in Symbols._syms_:
 			raise AttributeError(name)
 		else:
-			return _syms_[name]
+			return Symbols._syms_[name].generate()
 	def add(cls, var):
 		cls._syms_[var.name] = var
 
@@ -85,12 +90,13 @@ class Symbols(object):
 class Symbol(Generator):
 	""" This should generate the same value every time within a run
 	"""
-	def __init__(self, name, code):
+	def __init__(self, name, code, ns={}):
 		super(Symbol, self).__init__()
 		self.name = name
 		self.code = code
-		self.value = None
+		self.val = None
 		self.generate_new = True
+		self.ns = ns
 		Symbols.add(self)
 	def next_run(self):
 		super(Symbol, self).next_run()
@@ -99,6 +105,9 @@ class Symbol(Generator):
 	def generate(self):
 		if self.generate_new:
 			# check if the value for this turn has already been generated
-			self.value = random.choice(eval(code))
+			if isinstance(self.code, Generator):
+				self.val = self.code.generate()
+			else:
+				self.val = eval(self.code, globals(), self.ns)
 			self.generate_new = False
-		return self.value
+		return self.val

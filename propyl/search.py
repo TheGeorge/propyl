@@ -62,6 +62,7 @@ class test_property(object):
 		if not self.name in test_props:
 			test_props[self.name] = []
 		test_props[self.name].append(prop(*self.args, **self.kws))
+		return prop
 
 def run_tests(argv):
 	for key in test_props:

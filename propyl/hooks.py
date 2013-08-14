@@ -3,6 +3,8 @@ from error import PostConditionNotMet
 class Hook(object):
 	def hook_arguments(self, call, args, kws):
 		pass
+	def hook_call(self, call, args, kws):
+		pass
 	def hook_result(self, call, retval, args, kws):
 		pass
 
@@ -20,6 +22,23 @@ class next_state(object):
 		self.call = call
 	def __call__(self, hook_func):
 		hook = StateHook(hook_func)
+		self.call.caller.add_hook(hook)
+		return hook_func
+
+# call_hook
+class CallHook(Hook):
+	def __init__(self, func):
+		super(CallHook, self).__init__()
+		self.func = func
+	def hook_call(self, call, args, kws):
+		return self.func(*args, **kws)
+
+class precall(object):
+	def __init__(self, call):
+		super(next_state, self).__init__()
+		self.call = call
+	def __call__(self, hook_func):
+		hook = CallHook(hook_func)
 		self.call.caller.add_hook(hook)
 		return hook_func
 

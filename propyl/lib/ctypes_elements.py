@@ -77,6 +77,20 @@ class CStr(propyl.Generator):
 		l = random.randint(0,self.maxlength)
 		return self.ctype(reduce(operator.add, [chr(random.randint(0,255)) for i in xrange(l)]))
 
+class CSymbol(propyl.Symbol):
+	def __init__(self, name, code, ns={}, ctype=None):
+		super(CSymbol, self).__init__(name, code, ns=ns)
+		self._ctype = ctype
+	@property
+	def ctype(self):
+		if self._ctype:
+			return self._ctype
+		else:
+			backup = self.generate_new
+			obj = self.generate
+			self.generate_new = backup
+			return type(obj)
+
 # unimplemented base types:
 """
 c_wchar	wchar_t	1-character unicode string
@@ -113,6 +127,7 @@ def linux_loader(path):
 __libdl = None
 @unloader("linux")
 def linux_unloader(lib):
+	global __libdl
 	handle = lib._handle
 	if not __libdl:
 		__libdl = cdll.LoadLibrary("libdl.so")
@@ -122,6 +137,7 @@ def linux_unloader(lib):
 __win_handles = {}
 @loader("win32")
 def win_loader(path):
+	global __win_handles
 	handle = ctypes.windll.kernel32.LoadLibraryA(path)
 	lib = ctypes.WinDLL(None, handle=handle)
 	__win_handles[lib] = handle
@@ -191,7 +207,10 @@ class CFunction(object):
 		# retrieve library and function at call time
 		if not self.lib.lib:
 			raise CTypesError("library not loaded, forget to initialize?")
-		f = getattr(self.lib.lib, self.name)
+		try:
+			f = getattr(self.lib.lib, self.name)
+		except AttributeError:
+			raise CTypesError("function %s not found in library %s" %(self.name, str(self.lib.lib)))
 		if self.argtypes:
 			f.argtypes = self.argtypes
 		if self.restype:
