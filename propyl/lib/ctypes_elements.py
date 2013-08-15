@@ -91,6 +91,12 @@ class CSymbol(propyl.Symbol):
 			self.generate_new = backup
 			return type(obj)
 
+class CFromArguments(propyl.FromArguments):
+	def __init__(self, func, ctype=c_int):
+		super(CFromArguments, self).__init__(func)
+		self.ctype = ctype
+
+
 # unimplemented base types:
 """
 c_wchar	wchar_t	1-character unicode string

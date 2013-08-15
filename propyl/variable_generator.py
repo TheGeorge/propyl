@@ -107,7 +107,31 @@ class Symbol(Generator):
 			# check if the value for this turn has already been generated
 			if isinstance(self.code, Generator):
 				self.val = self.code.generate()
+			elif callable(self.code):
+				self.val = self.code()
 			else:
-				self.val = eval(self.code, globals(), self.ns)
+				self.val = random.choice(eval(self.code, globals(), self.ns))
 			self.generate_new = False
 		return self.val
+
+class FromArguments(Generator):
+	def __init__(self, func):
+		super(FromArguments, self).__init__()
+		self.func = func
+	def generate(self, args=(), kws={}):
+		return self.func(*args, **kws)
+
+class GenericGenerator(Generator):
+	def __init__(self, code, **kws):
+		super(GenericGenerator, self).__init__()
+		self.code = code
+		self.ns = {}
+		for key in kws:
+			setattr(self, key, kws[key])
+	def generate(self):
+		if isinstance(self.code, Generator):
+			return self.code.generate()
+		elif callable(self.code):
+			return self.code()
+		else:
+			return random.choice(eval(self.code, globals(), self.ns))

@@ -1,4 +1,5 @@
 from hooks import *
+from variable_generator import FromArguments
 
 class Caller(object):
 	def get_args(self, *args, **kws):
@@ -17,8 +18,27 @@ class FuncCall(Caller):
 		assert isinstance(hook, Hook)
 		self.hooks.append(hook)
 	def get_args(self, args, kws):
-		call_args = tuple([a.value for a in args])
-		call_kws = dict([(key, kws[key].value) for key in kws])
+		# generate call_args
+		call_args = []
+		rebuild_args = []
+		for i, arg in enumerate(args):
+			if isinstance(arg, FromArguments):
+				rebuild_args.append((i,arg))
+				call_args+=[None]
+			else:
+				call_args+=[arg.value]
+		call_kws  = {}
+		rebuild_kws = []
+		for key in kws:
+			if isinstance(kws[key], FromArguments):
+				call_kws[key] = None
+				rebuild_kws += [key]
+		# build FromArguments elements
+		for i,arg in rebuild_args:
+			call_args[i] = arg.generate(args=call_args, kws=call_kws)
+		for key in rebuild_kws:
+			call_kws[key] = kws[key].generate(args=call_args, kws=call_kws)
+		call_args = tuple(call_args)
 		return call_args, call_kws
 	def check_preconditions(self, call_args, call_kws):
 		for pre in self.hooks:
