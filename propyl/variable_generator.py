@@ -107,10 +107,15 @@ class Symbol(Generator):
 			# check if the value for this turn has already been generated
 			if isinstance(self.code, Generator):
 				self.val = self.code.generate()
-			elif callable(self.code):
-				self.val = self.code()
 			else:
-				self.val = random.choice(eval(self.code, globals(), self.ns))
+				if callable(self.code):
+					self.val = self.code()
+				else:
+					self.val = eval(self.code, globals(), self.ns)
+				if self.val:
+					self.val = random.choice(self.val)
+				else:
+					self.val = None
 			self.generate_new = False
 		return self.val
 
