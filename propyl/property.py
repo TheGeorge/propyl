@@ -58,6 +58,10 @@ class Property(object):
 		self.setup()
 		for command in command_list:
 			cn, call, retval, args, kws = command
+			if not call.check_preconditions(args, kws):
+				# TODO implement DD+ algorithm
+				# also do something with the fsm
+				return
 			retval = call.call_with_args(args, kws)
 			call.check_postconditions(retval, args, kws)
 
