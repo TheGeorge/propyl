@@ -1,4 +1,4 @@
-from error import PostConditionNotMet
+from error import PostConditionNotMet, PreConditionNotMet
 
 class Hook(object):
 	def hook_arguments(self, call, args, kws):
@@ -48,7 +48,8 @@ class PreConditionHook(Hook):
 		super(PreConditionHook, self).__init__()
 		self.func = func
 	def hook_arguments(self, call, args, kws):
-		return self.func(*args, **kws)
+		if not self.func(*args, **kws):
+			raise PreConditionNotMet
 
 
 class precondition(object):

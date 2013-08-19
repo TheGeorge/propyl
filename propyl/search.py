@@ -1,5 +1,6 @@
-from property import Property
+from property import *
 from util import RuntimeStates
+import operator
 
 class Test(object):
 	def __init__(self, properties, N=1000):
@@ -28,27 +29,41 @@ class Test(object):
 	def shrink(self, prop):
 		r = []
 		c = [i for i in enumerate(prop.command_list)]
-		return self.dd2(prop, c, r)
+		return self.dd3(prop, c, r, 2)
 
-	def dd2(self, prop, c, r):
-		c1 = c[:len(c)/2]
-		c2 = c[len(c)/2:]
-		if len(c)==1:
+	def dd3(self, prop, c, r, n):
+		if len(c)<=1:
 			return c
-		if not self._subtest(prop, c1+r):
-			return self.dd2(prop, c1,r)
-		elif not self._subtest(prop, c2+r):
-			return self.dd2(prop, c2, r)
+		l = len(c)/n
+		ci = [c[i-l:min(i, len(c))] for i in range(l, len(c)+l, l)]
+		ti = [self._subtest(prop, e) for e in [_c for _c in ((ci+[r]) if r else ci)]]
+		# found in ci
+		for i, t_res in enumerate(ti):
+			if t_res==FAIL:
+				return self.dd3(prop, ci[i], r, 2)
+		ici = [[e for e in c if not e in _c+r] for _c in ci]
+		iti = [self._subtest(prop, _c) for _c in (ici+[r] if r else ici)]
+		cut = lambda a,b: [e for e in a if e in b]
+		# inference
+		for i in range(len(ti)):
+			if ti[i]==OK and iti[i]==OK:
+				return self.dd3(prop, ci[i], ici[i]+r, 2) + self.dd3(prop, ici[i], ci[i]+r, 2)
+		# preference
+		for i in range(len(ti)):
+			if ti[i]==UNDEF and iti==OK:
+				return self.dd3(prop, ci[i], ici[i]+r, 2)
+		if n<len(c):
+			cc = cut(c, reduce(cut, [ici[i] for i in range(len(ici)) if iti[i]==FAIL]))
+			rr = r + reduce(operator.add, [ci[i] for i in range(len(ci)) if ti[i]==OK])
+			nn = min(len(cc), 2*n)
+			return self.dd3(prop, cc, rr, nn)
 		else:
-			return self.dd2(prop, c1, c2+r)+self.dd2(prop, c2, c1+r)
+			return cut(c, reduce(cut, [ici[i] for i in range(len(ici)) if iti[i]==FAIL]))
+
 	def _subtest(self, prop, commands):
 		commands.sort(lambda x,y: int.__cmp__(x[0], y[0]))
 		c = [packed[1] for packed in commands]
-		try:
-			prop.run_list(c)
-		except:
-			return False
-		return True
+		return prop.run_list(c)
 
 test_props = {}
 

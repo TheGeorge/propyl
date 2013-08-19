@@ -1,18 +1,18 @@
 from propyl import *
-
+import sys
 #test functions
 def ping():
-	print("ping")
+	sys.stdout.write(".")
 def pong():
-	print("pong")
+	sys.stdout.write("#")
 
 #states
 Sping = State("ping")
 Spong = State("pong")
 
 #calls
-func_ping = Call("ping", FuncCall(ping), ())
-func_pong = Call("pong", FuncCall(pong), ())
+func_ping = Call(FuncCall(ping))
+func_pong = Call(FuncCall(pong))
 
 #fsm definition
 fsm_trans = [
@@ -27,3 +27,4 @@ class Prop_Positive(Property):
 
 # run the tests
 run_tests(None)
+print

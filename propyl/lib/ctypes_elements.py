@@ -209,6 +209,9 @@ class CFunction(object):
 		self.name = name
 		self.argtypes = None
 		self.restype = None
+	@property
+	def __name__(self):
+		return self.name
 	def __call__(self, *args):
 		# retrieve library and function at call time
 		if not self.lib.lib:
