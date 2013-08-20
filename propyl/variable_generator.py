@@ -10,7 +10,7 @@ NOCOPY, COPY, DEEPCOPY = range(3)
 
 _var_list = [] # global variable list
 class Generator(object):
-	def __init__(self, copy=COPY):
+	def __init__(self, copy=NOCOPY):
 		_var_list.append(self)
 		self.generate_new = True
 		self.val = None
@@ -24,14 +24,16 @@ class Generator(object):
 		if self.generate_new:
 			self.val = self.generate()
 			self.generate_new = False
-		if self.copy==COPY:
-			return copy.copy(self.val)
-		elif self.copy==DEEPCOPY:
-			return copy.deepcopy(self.val)
-		else:
-			return self.val
+		return self.val
 	def __repr__(self):
-		return "<%s>" % (repr(self.val),)
+		return "<g %s>" % (repr(self.val),)
+	def dublicate(self):
+		if self.copy==NOCOPY:
+			return self
+		elif self.copy==COPY:
+			return copy.copy(self)
+		else:
+			return copy.deepcopy(self)
 
 # base types
 class Integer(Generator):
@@ -109,7 +111,7 @@ class Symbol(Generator):
 	""" This should generate the same value every time within a run
 	"""
 	def __init__(self, name, code, ns={}):
-		super(Symbol, self).__init__()
+		super(Symbol, self).__init__(copy=COPY)
 		self.name = name
 		self.code = code
 		self.ns = ns

@@ -77,6 +77,40 @@ class CStr(propyl.Generator):
 		l = random.randint(0,self.maxlength)
 		return self.ctype(reduce(operator.add, [chr(random.randint(0,255)) for i in xrange(l)]))
 
+class CStruct(propyl.Generator):
+	def __init__(self, struct_type, copy=propyl.COPY):
+		super(CStruct, self).__init__(copy=copy)
+		self.st = struct_type
+		self.struct = None
+	@property
+	def ctype(self):
+		return POINTER(self.st)
+	@staticmethod
+	def copy_struct(s):
+		no = type(s)()
+		for n,t in s._fields_:
+			setattr(no, n, getattr(s, n))
+		return no
+	def dublicate(self):
+		if self.copy==propyl.NOCOPY:
+			return self
+		else:
+			newgen = CStruct(self.st, copy=self.copy)
+			newgen.struct = CStruct.copy_struct(self.struct)
+			return newgen
+	def generate(self):
+		self.struct = self.st()
+		return byref(self.struct)
+	def __repr__(self):
+		retval = "<g struct {"
+		for n,t in self.st._fields_:
+			retval += n+"="
+			retval += repr(getattr(self.struct, n))
+			retval += ", "
+		retval = retval[:-2]
+		retval += "} >"
+		return retval
+
 class CSymbol(propyl.Symbol):
 	def __init__(self, name, code, ns={}, ctype=None):
 		super(CSymbol, self).__init__(name, code, ns=ns)
@@ -95,7 +129,6 @@ class CFromArguments(propyl.FromArguments):
 	def __init__(self, func, ctype=c_int):
 		super(CFromArguments, self).__init__(func)
 		self.ctype = ctype
-
 
 # unimplemented base types:
 """
@@ -256,3 +289,7 @@ class CProperty(propyl.Property):
 		setup_ctypes()
 	def teardown(self):
 		teardown_ctypes()
+
+# missing dereference from pointer type in ctypes
+def byval(ref):
+	return ref._obj

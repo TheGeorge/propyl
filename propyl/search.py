@@ -26,6 +26,21 @@ class Test(object):
 				else:
 					print("no smaller testcase found")
 				break
+		self.print_stats()
+	def print_stats(self):
+		counts = {}
+		for prop in self.props:
+			for call in prop.command_list:
+				name = call[0]
+				if name in counts:
+					counts[name] +=1
+				else:
+					counts[name] = 1
+		total = sum(counts.values())
+		print("Statistics: %d calls in total" % (total,))
+		for key in counts:
+			print("\t%s = %.2f %% (%d)" % (key, float(counts[key])/total*100,counts[key]))
+
 	def shrink(self, prop):
 		r = []
 		c = [i for i in enumerate(prop.command_list)]

@@ -84,8 +84,8 @@ class Call(object):
 	def wrapped(self):
 		args, kws = self.get_args() # generate values
 		self.check_preconditions(args, kws)
-		tr_args = copy.deepcopy(self.symb_args)
-		tr_kws = copy.deepcopy(self.symb_kws)
+		tr_args = tuple([s.dublicate() for s in self.symb_args])
+		tr_kws = dict([(key, self.symb_kws[key].dublicate()) for key in self.symb_kws])
 		try:
 			retval = self.call_with_args(args, kws)
 			tr = (self.name, self, retval, tr_args, tr_kws)
