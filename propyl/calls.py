@@ -101,15 +101,15 @@ class Call(object):
 				raise AssertionError("postcondition '%s' not met" %(e.message,))
 			else:
 				raise AssertionError("postcondition not met")
-		except Error as e:
+		except (Error, AssertionError) as e:
 			raise e
 		except:
 			e  = sys.exc_info()[1]
 			retval = None
 			tr = (self.name, self, retval, tr_args, tr_kws)
 			self.command_list.append(tr)
-			import traceback
-			traceback.print_exc(file=sys.stdout)
+			#import traceback
+			#traceback.print_exc(file=sys.stdout)
 			raise AssertionError("crashed")
 		#return (True, retval)
 		return retval

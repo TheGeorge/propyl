@@ -1,6 +1,8 @@
 from property import *
 from util import RuntimeStates
 import operator
+from calls import Call, FuncCall
+from variable_generator import GenGenerator
 
 class Test(object):
 	def __init__(self, properties, N=1000):
@@ -89,9 +91,20 @@ class test_property(object):
 		self.args = args
 		self.kws = kws
 	def __call__(self, prop):
-		if not self.name in test_props:
-			test_props[self.name] = []
-		test_props[self.name].append(prop(*self.args, **self.kws))
+		if type(prop)==type and issubclass(prop, Property):
+			if not self.name in test_props:
+				test_props[self.name] = []
+			test_props[self.name].append(prop(*self.args, **self.kws))
+		elif callable(prop):
+			# func
+			assert isinstance(self.args[0], list), Error("list of calls required")
+			assert not self.kws
+			prop_call = Call(FuncCall(prop), tuple([GenGenerator(g) for g in prop.__defaults__]))
+			if not self.name in test_props:
+				test_props[self.name] = []
+			test_props[self.name].append(SimpleProperty(prop_call, self.args[0]))
+		else:
+			raise Error(repr(prop)+" is not a valid property")
 		return prop
 
 def run_tests(argv):

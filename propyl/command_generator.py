@@ -35,6 +35,13 @@ class WeightedCmds(UniformCmds):
 			if r<acc:
 				return self._commands[i]
 
+class OneGen(CommandsGenerator):
+	def __init__(self, command, others):
+		super(OneGen, self).__init__([command]+others)
+		self.command = command
+	def get_next(self):
+		return self.command
+
 # fsm generator
 class State(object):
 	def __init__(self, name):

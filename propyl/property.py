@@ -1,4 +1,4 @@
-from command_generator import UniformCmds, CommandsGenerator
+from command_generator import UniformCmds, CommandsGenerator, OneGen
 from variable_generator import _var_list
 from error import PostConditionNotMet, Error, PreConditionNotMet
 from util import RuntimeStates
@@ -31,7 +31,10 @@ class Property(object):
 				call.check_preconditions(args, kws)
 			except PreConditionNotMet:
 				return UNDEF
-			retval = call.call_with_args(args, kws)
+			try:
+				retval = call.call_with_args(args, kws)
+			except AssertionError:
+				return FAIL
 			try:
 				call.check_postconditions(retval, args, kws)
 			except PostConditionNotMet:
@@ -71,4 +74,9 @@ class Property(object):
 		self.run_commands()
 	def run_commands(self):
 		result = self.run_command()
+
+class SimpleProperty(Property):
+	def __init__(self, command, others):
+		self.command_list = []
+		self.cmdgen = OneGen(command,others)
 

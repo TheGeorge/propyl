@@ -71,11 +71,27 @@ class List(Generator):
 		self.elements = elements
 		self.check_always=[[]]*3
 		self.maxlength =maxlength
+		self.val = []
 	def generate(self):
 		if self.check_always and random.uniform(0,1)<0.2:
 			return self.check_always.pop()
 		l = random.randint(0,self.maxlength)
 		return [(random.choice(self.elements)).generate() for i in xrange(l)]
+	@property
+	def value(self):
+		if self.generate_new:
+			self.val = self.generate()
+			self.generate_new = False
+		return copy.copy(self.val)
+	def __repr__(self):
+		if len(self.val)<5:
+			return "<g List %s>" % (repr(self.val),)
+		else:
+			b = "["
+			for i in self.val[:5]:
+				b+=repr(i)+", "
+			b+="...]"
+			return "<g List %s>" % (repr(b),)
 
 class Tuple(Generator):
 	def __init__(self, *elements):
@@ -92,6 +108,13 @@ class Dictionary(Generator):
 	def generate(self):
 		l = random.randint(0,self.maxlength)
 		return dict([self.key_vals.generate() for i in xrange(l)])
+
+class GenGenerator(Generator):
+	def __init__(self, generator):
+		super(GenGenerator, self).__init__()
+		self.g = generator
+	def generate(self):
+		return self.g
 
 # Symbolic variables and some python class magic
 class _Symbols(type):
