@@ -1,5 +1,5 @@
 from properties import *
-from util import RuntimeStates
+from util import RuntimeStates, mreduce
 import operator
 from calls import Call, FuncCall
 from variable_generator import GenGenerator
@@ -62,6 +62,7 @@ class Test(object):
 		ici = [[e for e in c if not e in _c+r] for _c in ci]
 		iti = [self._subtest(prop, _c) for _c in (ici+[r] if r else ici)]
 		cut = lambda a,b: [e for e in a if e in b]
+		raise Exception("UNDEF bad implemented")
 		# inference
 		for i in range(len(ti)):
 			if ti[i]==OK and iti[i]==OK:
@@ -71,7 +72,7 @@ class Test(object):
 			if ti[i]==UNDEF and iti==OK:
 				return self.dd3(prop, ci[i], ici[i]+r, 2)
 		if n<len(c):
-			cc = cut(c, reduce(cut, [ici[i] for i in range(len(ici)) if iti[i]==FAIL]))
+			cc = cut(c, reduce(cut, [tmp_c for i, tmp_c in enumerate(ici) if iti[i]==FAIL]))
 			rr = r + reduce(operator.add, [ci[i] for i in range(len(ci)) if ti[i]==OK])
 			nn = min(len(cc), 2*n)
 			return self.dd3(prop, cc, rr, nn)

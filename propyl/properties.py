@@ -1,4 +1,4 @@
-from command_generator import UniformCmds, CommandsGenerator, OneGen
+from command_generator import UniformCmds, CommandsGenerator, OneGen, GeneratorMessage
 from variable_generator import _var_list, GenGenerator
 from error import PostConditionNotMet, Error, PreConditionNotMet, TestFailed
 from util import RuntimeStates
@@ -66,15 +66,16 @@ class Property(object):
 					except PreConditionNotMet:
 						for var in _var_list:
 							var.next_run() # reset variable generators
+					except GeneratorMessage as e:
+						self.cmdgen.check_exception(e)
+						break
 				else:
 					raise AssertionError("Could not generate a valid call within %d tries." % (max_tries,))
 			self.teardown()
 		finally:
 			self.finalize()
 	def check(self):
-		self.run_commands()
-	def run_commands(self):
-		result = self.run_command()
+		self.run_command()
 
 class SimpleProperty(Property):
 	def __init__(self, command):

@@ -3,6 +3,7 @@ from variable_generator import FromArguments
 from error import * 
 import sys
 import copy
+import config
 
 class Caller(object):
 	def get_args(self, *args, **kws):
@@ -99,6 +100,8 @@ class Call(object):
 				self.check_postconditions(retval, args, kws)
 			except PostConditionNotMet as e:
 				raise e
+			except Error as e:
+				raise e
 			except Exception as e:
 				raise Error("crashed evaluating a postcondition: %s" % (e.message,))
 		except PostConditionNotMet as e:
@@ -113,7 +116,7 @@ class Call(object):
 				tr = (self.name, self, retval, tr_args, tr_kws)
 				self.command_list.append(tr)
 			raise TestFailed(e.message)
-		except (Error) as e:
+		except Error as e:
 			raise e
 		except:
 			e  = sys.exc_info()[1]
@@ -121,8 +124,9 @@ class Call(object):
 				retval = None
 				tr = (self.name, self, retval, tr_args, tr_kws)
 				self.command_list.append(tr)
-			#import traceback
-			#traceback.print_exc(file=sys.stdout)
+			if config.CRASH_PRINT:
+				import traceback
+				traceback.print_exc(file=sys.stdout)
 			raise TestFailed("crashed")
 		#return (True, retval)
 		return retval

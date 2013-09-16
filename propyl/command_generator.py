@@ -1,5 +1,7 @@
 import random
-from error import PreConditionNotMet, TransitionError
+from error import PreConditionNotMet, TransitionError, Error
+
+class GeneratorMessage(Error): pass
 
 # command generators
 class CommandsGenerator(object):
@@ -12,6 +14,8 @@ class CommandsGenerator(object):
 	def test_call(self, call):
 		return True # usually calls are accepted when replaying
 	def setup(self): pass
+	def check_exception(self, exception):
+		raise exception
 
 class UniformCmds(CommandsGenerator):
 	def __init__(self, commands):
@@ -43,8 +47,9 @@ class OneGen(CommandsGenerator):
 		return self.command
 
 # fsm generator
+states = {}
 class State(object):
-	def __init__(self, name):
+	def __init__(self, name="unnamed"):
 		super(State, self).__init__()
 		self.name = name
 	def __gt__(self, other):
@@ -62,6 +67,8 @@ class Transition(object):
 		return self
 	def get_calls(self):
 		return self.functions
+
+class FSMTransition(GeneratorMessage): pass
 
 class FSMCmds(CommandsGenerator):
 	def __init__(self, transitions, starting_state):
@@ -107,3 +114,8 @@ class FSMCmds(CommandsGenerator):
 			return False
 	def setup(self):
 		self.state = self.starting_state
+	def check_exception(self, exception):
+		if isinstance(exception, FSMTransition):
+			self.state = exception.message
+		else:
+			raise exception

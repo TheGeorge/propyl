@@ -77,6 +77,14 @@ class CStr(propyl.Generator):
 		l = random.randint(0,self.maxlength)
 		return self.ctype(reduce(operator.add, [chr(random.randint(0,255)) for i in xrange(l)]))
 
+class CStrBuffer(propyl.Generator):
+	def __init__(self, size):
+		super(CStrBuffer, self).__init__()
+		self.size = size
+		self.ctype = type(create_string_buffer(self.size))
+	def generate(self):
+		return create_string_buffer(self.size)
+
 class CStruct(propyl.Generator):
 	def __init__(self, struct_type, copy=propyl.NOCOPY):
 		super(CStruct, self).__init__(copy=copy)
