@@ -1,5 +1,5 @@
 from properties import *
-from util import RuntimeStates, mreduce
+from util import RuntimeStates
 import operator
 from calls import Call, FuncCall
 from variable_generator import GenGenerator
