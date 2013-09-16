@@ -5,3 +5,5 @@ class TransitionError(Error): pass
 class PreConditionNotMet(Error): pass
 class PostConditionNotMet(Error): pass
 class PError(Error): pass
+
+class TestFailed(Error): pass

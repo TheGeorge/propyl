@@ -1,7 +1,8 @@
 from command_generator import UniformCmds, CommandsGenerator, OneGen
-from variable_generator import _var_list
-from error import PostConditionNotMet, Error, PreConditionNotMet
+from variable_generator import _var_list, GenGenerator
+from error import PostConditionNotMet, Error, PreConditionNotMet, TestFailed
 from util import RuntimeStates
+from calls import Call, FuncCall
 
 import sys
 
@@ -32,8 +33,8 @@ class Property(object):
 			except PreConditionNotMet:
 				return UNDEF
 			try:
-				retval = call.call_with_args(args, kws)
-			except AssertionError:
+				retval = call.wrapped(iargs=args, ikws=kws, record=False)
+			except TestFailed as e:
 				return FAIL
 			try:
 				call.check_postconditions(retval, args, kws)
@@ -76,7 +77,30 @@ class Property(object):
 		result = self.run_command()
 
 class SimpleProperty(Property):
-	def __init__(self, command, others):
-		self.command_list = []
-		self.cmdgen = OneGen(command,others)
+	def __init__(self, command):
+		self.cmdgen = OneGen(command)
+		self.cmds = [command]
 
+test_props = {}
+
+class test_property(object):
+	def __init__(self, test_name, *args, **kws):
+		super(test_property, self).__init__()
+		self.name = test_name
+		self.args = args
+		self.kws = kws
+	def __call__(self, prop):
+		if type(prop)==type and issubclass(prop, Property):
+			if not self.name in test_props:
+				test_props[self.name] = []
+			test_props[self.name].append(prop(*self.args, **self.kws))
+		elif callable(prop):
+			# func
+			assert not self.kws
+			prop_call = Call(FuncCall(prop), tuple([g for g in prop.__defaults__]))
+			if not self.name in test_props:
+				test_props[self.name] = []
+			test_props[self.name].append(SimpleProperty(prop_call))
+		else:
+			raise Error(repr(prop)+" is not a valid property")
+		return prop

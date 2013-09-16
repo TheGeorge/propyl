@@ -36,8 +36,8 @@ class WeightedCmds(UniformCmds):
 				return self._commands[i]
 
 class OneGen(CommandsGenerator):
-	def __init__(self, command, others):
-		super(OneGen, self).__init__([command]+others)
+	def __init__(self, command):
+		super(OneGen, self).__init__([command])
 		self.command = command
 	def get_next(self):
 		return self.command

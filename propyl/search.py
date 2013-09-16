@@ -1,8 +1,9 @@
-from property import *
+from properties import *
 from util import RuntimeStates
 import operator
 from calls import Call, FuncCall
 from variable_generator import GenGenerator
+from error import TestFailed
 
 class Test(object):
 	def __init__(self, properties, N=1000):
@@ -13,7 +14,7 @@ class Test(object):
 			RuntimeStates.reset_states()
 			try:
 				prop.test(N=self.runs)
-			except AssertionError as e:
+			except TestFailed as e:
 				print("Error: %s" % (e.message,))
 				length = len(prop.command_list)
 				print("(name, caller, retval, args, kws)")
@@ -81,31 +82,6 @@ class Test(object):
 		commands.sort(lambda x,y: int.__cmp__(x[0], y[0]))
 		c = [packed[1] for packed in commands]
 		return prop.run_list(c)
-
-test_props = {}
-
-class test_property(object):
-	def __init__(self, test_name, *args, **kws):
-		super(test_property, self).__init__()
-		self.name = test_name
-		self.args = args
-		self.kws = kws
-	def __call__(self, prop):
-		if type(prop)==type and issubclass(prop, Property):
-			if not self.name in test_props:
-				test_props[self.name] = []
-			test_props[self.name].append(prop(*self.args, **self.kws))
-		elif callable(prop):
-			# func
-			assert isinstance(self.args[0], list), Error("list of calls required")
-			assert not self.kws
-			prop_call = Call(FuncCall(prop), tuple([GenGenerator(g) for g in prop.__defaults__]))
-			if not self.name in test_props:
-				test_props[self.name] = []
-			test_props[self.name].append(SimpleProperty(prop_call, self.args[0]))
-		else:
-			raise Error(repr(prop)+" is not a valid property")
-		return prop
 
 def run_tests(argv):
 	for key in test_props:

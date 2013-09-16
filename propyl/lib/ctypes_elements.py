@@ -78,7 +78,7 @@ class CStr(propyl.Generator):
 		return self.ctype(reduce(operator.add, [chr(random.randint(0,255)) for i in xrange(l)]))
 
 class CStruct(propyl.Generator):
-	def __init__(self, struct_type, copy=propyl.COPY):
+	def __init__(self, struct_type, copy=propyl.NOCOPY):
 		super(CStruct, self).__init__(copy=copy)
 		self.st = struct_type
 		self.struct = None

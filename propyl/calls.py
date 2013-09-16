@@ -81,15 +81,20 @@ class Call(object):
 		self.caller.check_preconditions(call_args, call_kws)
 	def check_postconditions(self, retval, call_args, call_kws):
 		self.caller.check_postconditions(retval, call_args, call_kws)
-	def wrapped(self):
-		args, kws = self.get_args() # generate values
+	def wrapped(self, iargs=(), ikws={}, record=True):
+		if iargs or ikws:
+			args, kws = iargs, ikws # use initial values
+		else:
+			args, kws = self.get_args() # generate values
 		self.check_preconditions(args, kws)
-		tr_args = tuple([s.dublicate() for s in self.symb_args])
-		tr_kws = dict([(key, self.symb_kws[key].dublicate()) for key in self.symb_kws])
+		if record:
+			tr_args = tuple([s.dublicate() for s in self.symb_args])
+			tr_kws = dict([(key, self.symb_kws[key].dublicate()) for key in self.symb_kws])
 		try:
 			retval = self.call_with_args(args, kws)
-			tr = (self.name, self, retval, tr_args, tr_kws)
-			self.command_list.append(tr)
+			if record:
+				tr = (self.name, self, retval, tr_args, tr_kws)
+				self.command_list.append(tr)
 			try:
 				self.check_postconditions(retval, args, kws)
 			except PostConditionNotMet as e:
@@ -98,21 +103,30 @@ class Call(object):
 				raise Error("crashed evaluating a postcondition: %s" % (e.message,))
 		except PostConditionNotMet as e:
 			if e.message:
-				raise AssertionError("postcondition '%s' not met" %(e.message,))
+				raise TestFailed("postcondition '%s' not met" %(e.message,))
 			else:
-				raise AssertionError("postcondition not met")
-		except (Error, AssertionError) as e:
+				raise TestFailed("postcondition not met")
+		except AssertionError as e:
+			# something within the test went wrong
+			if record:
+				retval = None
+				tr = (self.name, self, retval, tr_args, tr_kws)
+				self.command_list.append(tr)
+			raise TestFailed(e.message)
+		except (Error) as e:
 			raise e
 		except:
 			e  = sys.exc_info()[1]
-			retval = None
-			tr = (self.name, self, retval, tr_args, tr_kws)
-			self.command_list.append(tr)
+			if record:
+				retval = None
+				tr = (self.name, self, retval, tr_args, tr_kws)
+				self.command_list.append(tr)
 			#import traceback
 			#traceback.print_exc(file=sys.stdout)
-			raise AssertionError("crashed")
+			raise TestFailed("crashed")
 		#return (True, retval)
 		return retval
+
 	def __call__(self, *args, **kws):
 		self.symb_args = args
 		self.symb_kws = kws

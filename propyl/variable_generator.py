@@ -10,7 +10,7 @@ NOCOPY, COPY, DEEPCOPY = range(3)
 
 _var_list = [] # global variable list
 class Generator(object):
-	def __init__(self, copy=NOCOPY):
+	def __init__(self, copy=COPY):
 		_var_list.append(self)
 		self.generate_new = True
 		self.val = None
@@ -38,7 +38,7 @@ class Generator(object):
 # base types
 class Integer(Generator):
 	def __init__(self, lb=-1000, ub=1000):
-		super(Integer, self).__init__(copy=NOCOPY)
+		super(Integer, self).__init__()
 		self.lb = lb
 		self.ub = ub
 		self.check_always = [0,1,-1]*3
@@ -49,11 +49,26 @@ class Integer(Generator):
 
 class Float(Generator):
 	def __init__(self, lb=-1000.0, ub=1000.0):
-		super(Float, self).__init__(copy=NOCOPY)
+		super(Float, self).__init__()
 		self.lb = lb
 		self.ub = ub
 	def generate(self):
 		return random.uniform(self.lb, self.ub)
+
+class Str(Generator):
+	def __init__(self, characters=None, maxlength=128):
+		super(CStr, self).__init__()
+		self.characters = characters
+		self.maxlength = 128
+		self.check_always = [""]*3
+	def generate(self):
+		if self.check_always and random.uniform(0,1)<0.2:
+			return self.ctype(self.check_always.pop())
+		l = random.randint(0,self.maxlength)
+		if not self.characters:
+			return reduce(operator.add, [chr(random.randint(0,255)) for i in xrange(l)])
+		else:
+			return reduce(operator.add, [random.choice(self.characters) for i in xrange(l)])
 
 class Element(Generator):
 	def __init__(self, values, copy=COPY):
