@@ -4,22 +4,24 @@ import operator
 from calls import Call, FuncCall
 from variable_generator import GenGenerator
 from error import TestFailed
+import config
 
 class Test(object):
-	def __init__(self, properties, N=1000):
+	def __init__(self, properties):
 		self.props = properties
-		self.runs = N
 	def run(self):
 		for prop in self.props:
 			RuntimeStates.reset_states()
 			try:
-				prop.test(N=self.runs)
+				prop.test(config.NUM_CALLS, config.MAX_TRIES)
 			except TestFailed as e:
 				print("Error: %s" % (e.message,))
 				length = len(prop.command_list)
-				print("(name, caller, retval, args, kws)")
-				for l in prop.command_list:
-					print(str(l))
+				print("after %d calls" % (length,))
+				if config.PRINT_UNSHRINKED:
+					print("(name, caller, retval, args, kws)")
+					for l in prop.command_list:
+						print(str(l))
 				print("Shrinking...")
 				shrunk_case = self.shrink(prop)
 				if len(shrunk_case)<length:
@@ -40,9 +42,10 @@ class Test(object):
 				else:
 					counts[name] = 1
 		total = sum(counts.values())
-		print("Statistics: %d calls in total" % (total,))
-		for key in counts:
-			print("\t%s = %.2f %% (%d)" % (key, float(counts[key])/total*100,counts[key]))
+		if config.PRINT_STATS:
+			print("Statistics: %d calls in total" % (total,))
+			for key in counts:
+				print("\t%s = %.2f %% (%d)" % (key, float(counts[key])/total*100,counts[key]))
 
 	def shrink(self, prop):
 		r = []

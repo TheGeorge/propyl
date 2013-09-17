@@ -34,12 +34,14 @@ class Property(object):
 				return UNDEF
 			try:
 				retval = call.wrapped(iargs=args, ikws=kws, record=False)
+			except GeneratorMessage: pass
 			except TestFailed as e:
 				return FAIL
-			try:
-				call.check_postconditions(retval, args, kws)
-			except PostConditionNotMet:
-				return FAIL
+			#try:
+				#call.check_postconditions(retval, args, kws)
+			#except GeneratorMessage: pass
+			#except PostConditionNotMet:
+				#return FAIL
 		return OK
 	def run_command(self):
 		c = self.cmdgen.get_next()
@@ -47,7 +49,7 @@ class Property(object):
 	def setup(self): pass
 	def teardown(self): pass
 	def finalize(self): pass
-	def test(self, N=1000, max_tries=50):
+	def test(self, N, max_tries):
 		self.cmdgen.max_tries = max_tries
 		try:
 			self.setup()
