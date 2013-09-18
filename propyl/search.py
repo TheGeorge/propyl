@@ -1,5 +1,5 @@
 from properties import *
-from util import RuntimeStates
+from util import RuntimeStates, intersect
 import operator
 from calls import Call, FuncCall
 from variable_generator import GenGenerator
@@ -27,7 +27,7 @@ class Test(object):
 				if len(shrunk_case)<length:
 					print("shrunk testcase from %d to %d" % (length, len(shrunk_case)))
 					for l in shrunk_case:
-						print("\t%s" %(str(l[1]),))
+						print("\t%s" %(str(l),))
 				else:
 					print("no smaller testcase found")
 				break
@@ -57,30 +57,35 @@ class Test(object):
 			return c
 		l = len(c)/n
 		ci = [c[i-l:min(i, len(c))] for i in range(l, len(c)+l, l)]
-		ti = [self._subtest(prop, e) for e in [_c for _c in ((ci+[r]) if r else ci)]]
+		if len(ci)>n:
+			ci[-2]+=ci[-1]
+			ci = ci[:-1]
+		ti = [self._subtest(prop, e+r) for e in ci]
 		# found in ci
 		for i, t_res in enumerate(ti):
 			if t_res==FAIL:
 				return self.dd3(prop, ci[i], r, 2)
 		ici = [[e for e in c if not e in _c+r] for _c in ci]
-		iti = [self._subtest(prop, _c) for _c in (ici+[r] if r else ici)]
-		cut = lambda a,b: [e for e in a if e in b]
-		raise Exception("UNDEF bad implemented")
+		iti = [self._subtest(prop, e+r) for e in ici]
 		# inference
 		for i in range(len(ti)):
 			if ti[i]==OK and iti[i]==OK:
 				return self.dd3(prop, ci[i], ici[i]+r, 2) + self.dd3(prop, ici[i], ci[i]+r, 2)
 		# preference
 		for i in range(len(ti)):
-			if ti[i]==UNDEF and iti==OK:
+			if ti[i]==UNDEF and iti[i]==OK:
 				return self.dd3(prop, ci[i], ici[i]+r, 2)
 		if n<len(c):
-			cc = cut(c, reduce(cut, [tmp_c for i, tmp_c in enumerate(ici) if iti[i]==FAIL]))
-			rr = r + reduce(operator.add, [ci[i] for i in range(len(ci)) if ti[i]==OK])
-			nn = min(len(cc), 2*n)
-			return self.dd3(prop, cc, rr, nn)
+			#cc = cut(c, reduce(cut, [tmp_c for i, tmp_c in enumerate(ici) if iti[i]==FAIL]))
+			#rr = r + reduce(operator.add, [ci[i] for i in range(len(ci)) if ti[i]==OK])
+			nn = min(len(c), 2*n)
+			return self.dd3(prop, c, r, nn)
 		else:
-			return cut(c, reduce(cut, [ici[i] for i in range(len(ici)) if iti[i]==FAIL]))
+			tmp = [ici[i] for i in range(len(ici)) if iti[i]==FAIL]
+			if not tmp:
+				return []
+			else:
+				return intersect(c, reduce(intersect, [ici[i] for i in range(len(ici)) if iti[i]==FAIL]))
 
 	def _subtest(self, prop, commands):
 		commands.sort(lambda x,y: int.__cmp__(x[0], y[0]))

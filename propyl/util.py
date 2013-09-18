@@ -12,3 +12,10 @@ class RuntimeStates:
 def get_state(name):
 	return RuntimeStates.states[name]
 
+# set stuff
+def intersect(a,b):
+	if not a:
+		return []
+	if not b:
+		return []
+	return [e for e in a if e in b]

@@ -1,5 +1,5 @@
 from command_generator import UniformCmds, CommandsGenerator, OneGen, GeneratorMessage
-from variable_generator import _var_list, GenGenerator
+from variable_generator import _var_list, GenGenerator, Symbol
 from error import PostConditionNotMet, Error, PreConditionNotMet, TestFailed
 from util import RuntimeStates
 from calls import Call, FuncCall
@@ -27,6 +27,11 @@ class Property(object):
 			cn, call, retval, symb_args, symb_kws = command
 			if not self.cmdgen.test_call(call):
 				return UNDEF
+			# all symbolic args need to rebuild
+			for sa in symb_args:
+				if isinstance(sa, Symbol):
+					sa.next_run()
+			# now build current args
 			args, kws = call.caller.get_args(symb_args, symb_kws) # build args
 			try:
 				call.check_preconditions(args, kws)
@@ -34,14 +39,13 @@ class Property(object):
 				return UNDEF
 			try:
 				retval = call.wrapped(iargs=args, ikws=kws, record=False)
-			except GeneratorMessage: pass
+			except GeneratorMessage as e:
+				try:
+					self.cmdgen.check_exception(e)
+				except:
+					return FAIL
 			except TestFailed as e:
 				return FAIL
-			#try:
-				#call.check_postconditions(retval, args, kws)
-			#except GeneratorMessage: pass
-			#except PostConditionNotMet:
-				#return FAIL
 		return OK
 	def run_command(self):
 		c = self.cmdgen.get_next()

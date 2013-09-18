@@ -86,7 +86,7 @@ class CStrBuffer(propyl.Generator):
 		return create_string_buffer(self.size)
 
 class CStruct(propyl.Generator):
-	def __init__(self, struct_type, copy=propyl.NOCOPY):
+	def __init__(self, struct_type, copy=propyl.COPY):
 		super(CStruct, self).__init__(copy=copy)
 		self.st = struct_type
 		self.struct = None
