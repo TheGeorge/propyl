@@ -5,6 +5,7 @@ from calls import Call, FuncCall
 from variable_generator import GenGenerator
 from error import TestFailed
 import config
+import random, pickle
 
 class Test(object):
 	def __init__(self, properties):
@@ -30,8 +31,9 @@ class Test(object):
 						print("\t%s" %(str(l),))
 				else:
 					print("no smaller testcase found")
-				break
-		self.print_stats()
+
+		if config.PRINT_STATS:
+			self.print_stats()
 	def print_stats(self):
 		counts = {}
 		for prop in self.props:
@@ -42,10 +44,9 @@ class Test(object):
 				else:
 					counts[name] = 1
 		total = sum(counts.values())
-		if config.PRINT_STATS:
-			print("Statistics: %d calls in total" % (total,))
-			for key in counts:
-				print("\t%s = %.2f %% (%d)" % (key, float(counts[key])/total*100,counts[key]))
+		print("Statistics: %d calls in total" % (total,))
+		for key in counts:
+			print("\t%s = %.2f %% (%d)" % (key, float(counts[key])/total*100,counts[key]))
 
 	def shrink(self, prop):
 		r = []
@@ -92,7 +93,23 @@ class Test(object):
 		c = [packed[1] for packed in commands]
 		return prop.run_list(c)
 
+from optparse import OptionParser
+
 def run_tests(argv):
+	#parse input
+	parser = OptionParser()
+	parser.add_option("-r", "--useseed", dest="seedin", help="restore seed from file")
+	parser.add_option("-s", "--saveseed", dest="seedout", help="store seed to file")
+
+	(opts, args) = parser.parse_args(argv)
+	# handling seeds
+	if (opts.seedin):
+		with open(opts.seedin, "r") as f:
+			random.setstate(pickle.load(f))
+	if (opts.seedout):
+		with open(opts.seedout, "w") as f:
+			pickle.dump(random.getstate(), f)
+
 	for key in test_props:
 		print("Test '%s'" % (key,))
 		t = Test(test_props[key])
@@ -107,3 +124,4 @@ def run_tests(argv):
 				print
 				sys.exit(0)
 			traceback.print_exc(file=sys.stdout)
+

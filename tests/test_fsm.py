@@ -26,5 +26,6 @@ class Prop_Positive(Property):
 	_commands_ = FSMCmds(fsm_trans, Sping)
 
 # run the tests
-run_tests(None)
+import sys
+run_tests(sys.argv)
 print

@@ -14,4 +14,5 @@ def high_level_add(result, a, b):
 class Prop_Ctypes_Base(CProperty):
 	_commands_ = [func_add]
 
-run_tests(None)
+import sys
+run_tests(sys.argv)

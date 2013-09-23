@@ -39,4 +39,5 @@ class Prop_Positive(Property):
 RuntimeStates.init_states(["general"])
 
 # run the tests
-run_tests(None)
+import sys
+run_tests(sys.argv)
