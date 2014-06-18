@@ -1,1 +1,1 @@
-This is a testing tool
+Property based testing libray for python
